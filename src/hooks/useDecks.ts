@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Deck {
@@ -39,7 +39,7 @@ export function useCustomDecks(userId: string | undefined) {
     queryKey: ["decks", "custom", userId],
     queryFn: async () => {
       if (!userId) return [];
-      
+
       const { data, error } = await supabase
         .from("decks")
         .select("*")
@@ -51,5 +51,23 @@ export function useCustomDecks(userId: string | undefined) {
       return data as Deck[];
     },
     enabled: !!userId,
+  });
+}
+export function useDeleteDeck() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (deckId: string) => {
+      const { error } = await supabase
+        .from("decks")
+        .delete()
+        .eq("id", deckId);
+
+      if (error) throw error;
+      return deckId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["decks"] });
+    },
   });
 }

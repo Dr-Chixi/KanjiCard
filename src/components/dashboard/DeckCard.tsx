@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Lock, BookOpen, CheckCircle2 } from "lucide-react";
+import { Lock, BookOpen, CheckCircle2, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface DeckCardProps {
@@ -16,6 +17,7 @@ interface DeckCardProps {
   isCompleted?: boolean;
   progress?: number;
   onClick?: () => void;
+  onDelete?: () => void;
   delay?: number;
 }
 
@@ -30,6 +32,7 @@ export default function DeckCard({
   isCompleted = false,
   progress = 0,
   onClick,
+  onDelete,
   delay = 0,
 }: DeckCardProps) {
   const isLocked = userLevel < requiredLevel;
@@ -62,13 +65,30 @@ export default function DeckCard({
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center justify-between gap-2 mb-1">
                 <h3 className="font-semibold truncate">{name}</h3>
-                {isCompleted && (
-                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-                )}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {isCompleted && (
+                    <CheckCircle2 className="w-4 h-4 text-success" />
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-8 h-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 -mr-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Supprimer le deck "${name}" ?`)) {
+                          onDelete();
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
-              
+
               {description && (
                 <p className="text-sm text-muted-foreground line-clamp-1 mb-2">
                   {description}
@@ -96,7 +116,7 @@ export default function DeckCard({
               {progress > 0 && !isCompleted && (
                 <div className="mt-2">
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full gradient-primary transition-all"
                       style={{ width: `${progress}%` }}
                     />

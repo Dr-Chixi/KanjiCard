@@ -3,21 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useOfficialDecks } from "@/hooks/useDecks";
-import { useAIRecommendation } from "@/hooks/useAIRecommendation";
 import { useWeeklySessionCount } from "@/hooks/useStudySessions";
 import { Button } from "@/components/ui/button";
 import StatsCard from "@/components/dashboard/StatsCard";
 import StreakDisplay from "@/components/dashboard/StreakDisplay";
 import LevelProgress from "@/components/dashboard/LevelProgress";
 import DeckCard from "@/components/dashboard/DeckCard";
-import { LogOut, BookOpen, Target, Brain, Plus, Sparkles, Folder, User, ArrowRight } from "lucide-react";
+import { LogOut, BookOpen, Target, Plus, Folder, User } from "lucide-react";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: decks, isLoading: decksLoading } = useOfficialDecks();
-  const { data: aiRecommendation, isLoading: aiLoading } = useAIRecommendation();
   const { data: weeklySessionCount } = useWeeklySessionCount();
 
   const handleSignOut = async () => {
@@ -99,70 +97,6 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* AI Recommendations */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 px-1">
-              <Sparkles className="w-4 h-4 text-accent animate-pulse" />
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Suggestions IA</h3>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3">
-              {aiLoading ? (
-                Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="glass-card rounded-2xl p-4 h-24 animate-pulse bg-muted/50" />
-                ))
-              ) : aiRecommendation && aiRecommendation.length > 0 ? (
-                aiRecommendation.map((suggestion, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: 0.1 * index }}
-                    className="glass-card rounded-2xl p-4 relative overflow-hidden group"
-                  >
-                    {/* Background Glow */}
-                    <div className={`absolute -right-4 -top-4 w-24 h-24 blur-3xl opacity-10 rounded-full transition-opacity group-hover:opacity-20 ${suggestion.type === 'review' ? 'bg-orange-500' :
-                      suggestion.type === 'learn' ? 'bg-blue-500' : 'bg-purple-500'
-                      }`} />
-
-                    <div className="flex gap-4 items-start relative z-10">
-                      <div className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center ${suggestion.type === 'review' ? 'bg-orange-500/10 text-orange-500' :
-                        suggestion.type === 'learn' ? 'bg-blue-500/10 text-blue-500' :
-                          'bg-purple-500/10 text-purple-500'
-                        }`}>
-                        {suggestion.type === 'review' && <Brain className="w-6 h-6" />}
-                        {suggestion.type === 'learn' && <Plus className="w-6 h-6" />}
-                        {suggestion.type === 'challenge' && <Target className="w-6 h-6" />}
-                      </div>
-
-                      <div className="flex-1">
-                        <h4 className="font-bold text-sm mb-1">{suggestion.title}</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          {suggestion.message}
-                        </p>
-
-                        {suggestion.deckId && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 mt-2 px-0 hover:bg-transparent text-primary font-semibold text-xs group/btn"
-                            onClick={() => navigate(`/study/${suggestion.deckId}`)}
-                          >
-                            Vas-y maintenant
-                            <ArrowRight className="w-3 h-3 ml-1 transition-transform group-hover/btn:translate-x-1" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
-              ) : (
-                <p className="text-center text-xs text-muted-foreground py-4 italic">
-                  Continue de t'entraîner pour débloquer plus de suggestions ! ✨
-                </p>
-              )}
-            </div>
-          </div>
 
           {/* Decks Section */}
           <section>

@@ -117,11 +117,15 @@ export default function CreateDeck() {
   });
 
   const toggleKanji = (kanji: Kanji) => {
-    setSelectedKanjis((prev) =>
-      prev.find((k) => k.id === kanji.id)
-        ? prev.filter((k) => k.id !== kanji.id)
-        : [...prev, kanji]
-    );
+    console.log("Toggling kanji:", kanji.kanji, kanji.id);
+    setSelectedKanjis((prev) => {
+      const isSelected = prev.some((k) => k.id === kanji.id);
+      if (isSelected) {
+        return prev.filter((k) => k.id !== kanji.id);
+      } else {
+        return [...prev, kanji];
+      }
+    });
   };
 
   return (
@@ -138,7 +142,7 @@ export default function CreateDeck() {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-xl font-semibold text-white">Créer un deck</h1>
+            <h1 className="text-xl font-semibold text-white">Créer un deck KanjiCard</h1>
           </div>
         </div>
       </header>
@@ -291,20 +295,23 @@ export default function CreateDeck() {
               ) : filteredKanjis && filteredKanjis.length > 0 ? (
                 <div className="grid grid-cols-5 gap-2 p-3">
                   {filteredKanjis.slice(0, 100).map((kanji) => (
-                    <motion.button
+                    <button
                       key={kanji.id}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => toggleKanji(kanji)}
-                      className="aspect-square rounded-xl bg-muted/50 hover:bg-primary/20 flex flex-col items-center justify-center p-1 transition-colors group"
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleKanji(kanji);
+                      }}
+                      className="aspect-square rounded-xl bg-muted/50 hover:bg-primary/20 flex flex-col items-center justify-center p-1 transition-all active:scale-95 cursor-pointer touch-none"
                     >
-                      <span className="text-xl font-japanese group-hover:text-primary transition-colors">
+                      <span className="text-xl font-japanese group-hover:text-primary pointer-events-none">
                         {kanji.kanji}
                       </span>
-                      <span className="text-[10px] text-muted-foreground truncate w-full text-center">
+                      <span className="text-[10px] text-muted-foreground truncate w-full text-center pointer-events-none">
                         {kanji.meaning_fr.split(",")[0]}
                       </span>
-                    </motion.button>
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -341,7 +348,7 @@ export default function CreateDeck() {
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 mr-2" />
-                  Créer le deck ({selectedKanjis.length} kanjis)
+                  {!name.trim() ? "Donne un nom au deck" : `Créer le deck (${selectedKanjis.length} kanjis)`}
                 </>
               )}
             </Button>

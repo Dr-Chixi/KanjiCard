@@ -2,7 +2,8 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
-import { useOfficialDecks, useCustomDecks } from "@/hooks/useDecks";
+import { useOfficialDecks, useCustomDecks, useDeleteDeck } from "@/hooks/useDecks";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DeckCard from "@/components/dashboard/DeckCard";
@@ -14,6 +15,26 @@ export default function Decks() {
   const { data: profile } = useProfile();
   const { data: officialDecks, isLoading: officialLoading } = useOfficialDecks();
   const { data: customDecks, isLoading: customLoading } = useCustomDecks(user?.id);
+  const deleteMutation = useDeleteDeck();
+  const { toast } = useToast();
+
+  const handleDeleteDeck = (deckId: string) => {
+    deleteMutation.mutate(deckId, {
+      onSuccess: () => {
+        toast({
+          title: "Deck supprimé",
+          description: "Le deck a été supprimé avec succès.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Erreur",
+          description: "Impossible de supprimer le deck : " + error.message,
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -113,6 +134,7 @@ export default function Decks() {
                     requiredLevel={1}
                     userLevel={profile?.current_level || 1}
                     onClick={() => navigate(`/study/${deck.id}`)}
+                    onDelete={() => handleDeleteDeck(deck.id)}
                     delay={index * 0.05}
                   />
                 ))
