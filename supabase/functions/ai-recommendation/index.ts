@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     };
 
     // Call AI for multiple suggestions
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${Deno.env.get("KANJICARD_API_KEY")}`,
