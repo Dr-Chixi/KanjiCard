@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { useLearnedKanjisCount } from "@/hooks/useKanjis";
 import { getAvatarEmoji, avatarUrlToId } from "@/lib/avatars";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,9 @@ import {
   Calendar,
   TrendingUp,
   Folder,
+  User,
 } from "lucide-react";
+import BottomNav from "@/components/layout/BottomNav";
 import { format, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -29,6 +32,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: profile, isLoading } = useProfile();
+  const { data: learnedCount } = useLearnedKanjisCount();
 
   // Fetch study sessions for the chart
   const { data: studySessions } = useQuery({
@@ -186,7 +190,7 @@ export default function Profile() {
               <Card className="glass-card">
                 <CardContent className="p-4 text-center">
                   <BookOpen className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <p className="text-2xl font-bold">{profile?.kanjis_learned || 0}</p>
+                  <p className="text-2xl font-bold">{learnedCount || 0}</p>
                   <p className="text-xs text-muted-foreground">Kanjis appris</p>
                 </CardContent>
               </Card>
@@ -275,22 +279,7 @@ export default function Profile() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t">
-        <div className="max-w-lg mx-auto flex items-center justify-around py-3">
-          <Button variant="ghost" className="flex-col gap-1 h-auto py-2" onClick={() => navigate("/")}>
-            <BookOpen className="w-5 h-5" />
-            <span className="text-xs">Apprendre</span>
-          </Button>
-          <Button variant="ghost" className="flex-col gap-1 h-auto py-2" onClick={() => navigate("/decks")}>
-            <Folder className="w-5 h-5" />
-            <span className="text-xs">Decks</span>
-          </Button>
-          <Button variant="ghost" className="flex-col gap-1 h-auto py-2 text-primary" onClick={() => navigate("/profile")}>
-            <div className="w-5 h-5 rounded-full bg-primary" />
-            <span className="text-xs">Profil</span>
-          </Button>
-        </div>
-      </nav>
+      <BottomNav />
     </div>
   );
 }

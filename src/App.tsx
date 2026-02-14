@@ -26,20 +26,22 @@ const AppContent = () => {
       <Toaster />
       <Sonner />
 
-      {/* DEBUG OVERLAY - TO REMOVE LATER */}
-      <div className="fixed top-0 left-0 bg-black/80 text-white p-2 text-[10px] z-[9999] pointer-events-none max-w-md overflow-hidden break-words font-mono scale-90 origin-top-left">
-        <p>User Auth: {user ? user.email : "NULL"}</p>
-        <p>Profile Username: {profile?.username || "NULL"}</p>
-        <p>Profile Avatar: {profile?.avatar_url || "NULL"}</p>
-        <p>Loading Auth: {loading ? "YES" : "NO"}</p>
-        <p>Checking Onboarding: {isCheckingOnboarding ? "YES" : "NO"}</p>
-        <p className={needsOnboarding ? "text-green-400 font-bold" : "text-red-400"}>
-          Needs Onboarding: {needsOnboarding ? "YES" : "NO"}
-        </p>
-        <p className="border-t border-gray-600 mt-1 pt-1 text-gray-400">URL Params:</p>
-        <p>Search: {window.location.search || "(none)"}</p>
-        <p>Hash: {window.location.hash || "(none)"}</p>
-      </div>
+      {/* DEBUG OVERLAY - Restricted to specific admin */}
+      {user?.email === 'charif.lycee@gmail.com' && (
+        <div className="fixed top-0 left-0 bg-black/80 text-white p-2 text-[10px] z-[9999] pointer-events-none max-w-md overflow-hidden break-words font-mono scale-90 origin-top-left opacity-50 hover:opacity-100 transition-opacity">
+          <p>User Auth: {user ? user.email : "NULL"}</p>
+          <p>Profile Username: {profile?.username || "NULL"}</p>
+          <p>Profile Avatar: {profile?.avatar_url || "NULL"}</p>
+          <p>Loading Auth: {loading ? "YES" : "NO"}</p>
+          <p>Checking Onboarding: {isCheckingOnboarding ? "YES" : "NO"}</p>
+          <p className={needsOnboarding ? "text-green-400 font-bold" : "text-red-400"}>
+            Needs Onboarding: {needsOnboarding ? "YES" : "NO"}
+          </p>
+          <p className="border-t border-gray-600 mt-1 pt-1 text-gray-400">URL Params:</p>
+          <p>Search: {window.location.search || "(none)"}</p>
+          <p>Hash: {window.location.hash || "(none)"}</p>
+        </div>
+      )}
 
       <OnboardingModal open={needsOnboarding} />
       <Routes>

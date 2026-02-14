@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DeckCard from "@/components/dashboard/DeckCard";
-import { ArrowLeft, Plus, BookOpen, Folder } from "lucide-react";
+import { ArrowLeft, Plus, BookOpen, Folder, User } from "lucide-react";
+import BottomNav from "@/components/layout/BottomNav";
 
 export default function Decks() {
   const navigate = useNavigate();
@@ -151,22 +152,7 @@ export default function Decks() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t">
-        <div className="max-w-lg mx-auto flex items-center justify-around py-3">
-          <Button variant="ghost" className="flex-col gap-1 h-auto py-2" onClick={() => navigate("/")}>
-            <BookOpen className="w-5 h-5" />
-            <span className="text-xs">Apprendre</span>
-          </Button>
-          <Button variant="ghost" className="flex-col gap-1 h-auto py-2 text-primary" onClick={() => navigate("/decks")}>
-            <Folder className="w-5 h-5" />
-            <span className="text-xs">Decks</span>
-          </Button>
-          <Button variant="ghost" className="flex-col gap-1 h-auto py-2" onClick={() => navigate("/profile")}>
-            <div className="w-5 h-5 rounded-full bg-muted" />
-            <span className="text-xs">Profil</span>
-          </Button>
-        </div>
-      </nav>
+      <BottomNav />
     </div>
   );
 }

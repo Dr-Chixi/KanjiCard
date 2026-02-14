@@ -45,7 +45,7 @@ export default function Study() {
   useEffect(() => {
     const createSession = async () => {
       if (!user || !deckId || sessionIdRef.current) return;
-      
+
       const { data, error } = await supabase
         .from("study_sessions")
         .insert({
@@ -54,12 +54,12 @@ export default function Study() {
         })
         .select()
         .single();
-      
+
       if (!error && data) {
         sessionIdRef.current = data.id;
       }
     };
-    
+
     createSession();
   }, [user, deckId]);
 
@@ -118,23 +118,33 @@ export default function Study() {
         });
       }
 
-      return { quality, isNew: !existing };
+      return {
+        quality,
+        isNew: !existing,
+        wasLearnedBefore: existing ? (existing.repetitions > 0) : false
+      };
     },
   });
 
   const handleAnswer = async (quality: 0 | 1 | 2 | 3 | 4 | 5) => {
     if (!kanjis || !kanjis[currentIndex]) return;
 
-    await updateProgress.mutateAsync({
+    const result = await updateProgress.mutateAsync({
       kanjiId: kanjis[currentIndex].id,
       quality,
     });
 
+    const wasLearnedBefore = result.wasLearnedBefore;
+
     if (quality >= 3) {
       setCorrectCount((c) => c + 1);
+
       // XP: 10 base + bonus for difficulty
-      const xp = Math.round(10 * (deck?.xp_multiplier || 1) * (quality === 5 ? 1.5 : 1));
-      setXpEarned((e) => e + xp);
+      // Only grant XP if the kanji wasn't mastered before
+      if (!wasLearnedBefore) {
+        const xp = Math.round(10 * (deck?.xp_multiplier || 1) * (quality === 5 ? 1.5 : 1));
+        setXpEarned((e) => e + xp);
+      }
     }
 
     if (currentIndex < kanjis.length - 1) {
@@ -143,7 +153,7 @@ export default function Study() {
       // Session complete
       setSessionComplete(true);
       await finishSession();
-      
+
       // Celebration confetti
       confetti({
         particleCount: 100,
@@ -195,7 +205,7 @@ export default function Study() {
       }
 
       const newTotalXp = profile.total_xp + finalXp;
-      
+
       // Calculate new level
       let newLevel = profile.current_level;
       let xpThreshold = 100 * Math.pow(1.5, newLevel - 1);
@@ -217,7 +227,6 @@ export default function Study() {
           current_streak: newStreak,
           longest_streak: Math.max(newStreak, profile.longest_streak),
           last_study_date: today,
-          kanjis_learned: profile.kanjis_learned + finalCorrect,
         })
         .eq("user_id", user.id);
 
@@ -232,6 +241,7 @@ export default function Study() {
     queryClient.invalidateQueries({ queryKey: ["profile"] });
     queryClient.invalidateQueries({ queryKey: ["study-sessions"] });
     queryClient.invalidateQueries({ queryKey: ["weekly-session-count"] });
+    queryClient.invalidateQueries({ queryKey: ["learned-kanjis-count"] });
   };
 
   const restartSession = () => {
@@ -266,7 +276,7 @@ export default function Study() {
 
   if (sessionComplete) {
     const accuracy = Math.round((correctCount / kanjis.length) * 100);
-    
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4 gradient-primary">
         <motion.div
@@ -285,13 +295,13 @@ export default function Study() {
 
           <h1 className="text-3xl font-bold text-white mb-2">Session terminée !</h1>
           <p className="text-white/80 mb-8">
-            {accuracy >= 80 ? "Excellent travail ! 🌟" : 
-             accuracy >= 60 ? "Bien joué ! Continue comme ça 💪" : 
-             "C'est en forgeant qu'on devient forgeron ! 🔨"}
+            {accuracy >= 80 ? "Excellent travail ! 🌟" :
+              accuracy >= 60 ? "Bien joué ! Continue comme ça 💪" :
+                "C'est en forgeant qu'on devient forgeron ! 🔨"}
           </p>
 
           <div className="grid grid-cols-3 gap-3 mb-8">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -301,7 +311,7 @@ export default function Study() {
               <p className="text-2xl font-bold">{correctCount}/{kanjis.length}</p>
               <p className="text-xs text-muted-foreground">Correct</p>
             </motion.div>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
@@ -311,7 +321,7 @@ export default function Study() {
               <p className="text-2xl font-bold">+{xpEarned}</p>
               <p className="text-xs text-muted-foreground">XP</p>
             </motion.div>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}

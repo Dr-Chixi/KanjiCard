@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useOfficialDecks } from "@/hooks/useDecks";
+import { useLearnedKanjisCount } from "@/hooks/useKanjis";
 import { useWeeklySessionCount } from "@/hooks/useStudySessions";
 import { Button } from "@/components/ui/button";
 import StatsCard from "@/components/dashboard/StatsCard";
@@ -10,6 +11,7 @@ import StreakDisplay from "@/components/dashboard/StreakDisplay";
 import LevelProgress from "@/components/dashboard/LevelProgress";
 import DeckCard from "@/components/dashboard/DeckCard";
 import { LogOut, BookOpen, Target, Plus, Folder, User } from "lucide-react";
+import BottomNav from "@/components/layout/BottomNav";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ export default function Dashboard() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: decks, isLoading: decksLoading } = useOfficialDecks();
   const { data: weeklySessionCount } = useWeeklySessionCount();
+  const { data: learnedCount } = useLearnedKanjisCount();
 
   const handleSignOut = async () => {
     await signOut();
@@ -82,7 +85,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 gap-3">
             <StatsCard
               title="Kanjis appris"
-              value={profile?.kanjis_learned || 0}
+              value={learnedCount || 0}
               icon={BookOpen}
               gradient="primary"
               delay={0.3}
@@ -157,23 +160,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t">
-        <div className="max-w-lg mx-auto flex items-center justify-around py-3">
-          <Button variant="ghost" className="flex-col gap-1 h-auto py-2 text-primary" onClick={() => navigate("/")}>
-            <BookOpen className="w-5 h-5" />
-            <span className="text-xs">Apprendre</span>
-          </Button>
-          <Button variant="ghost" className="flex-col gap-1 h-auto py-2" onClick={() => navigate("/decks")}>
-            <Folder className="w-5 h-5" />
-            <span className="text-xs">Decks</span>
-          </Button>
-          <Button variant="ghost" className="flex-col gap-1 h-auto py-2" onClick={() => navigate("/profile")}>
-            <User className="w-5 h-5" />
-            <span className="text-xs">Profil</span>
-          </Button>
-        </div>
-      </nav>
+      <BottomNav />
     </div>
   );
 }

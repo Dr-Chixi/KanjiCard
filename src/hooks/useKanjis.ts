@@ -34,7 +34,7 @@ export function useKanjisForDeck(deckId: string | undefined) {
     queryKey: ["kanjis", "deck", deckId],
     queryFn: async () => {
       if (!deckId) return [];
-      
+
       const { data, error } = await supabase
         .from("deck_kanjis")
         .select(`
@@ -58,7 +58,7 @@ export function useUserKanjiProgress() {
     queryKey: ["kanji-progress", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      
+
       const { data, error } = await supabase
         .from("user_kanji_progress")
         .select("*")
@@ -66,6 +66,27 @@ export function useUserKanjiProgress() {
 
       if (error) throw error;
       return data as KanjiProgress[];
+    },
+    enabled: !!user,
+  });
+}
+
+export function useLearnedKanjisCount() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["learned-kanjis-count", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+
+      const { count, error } = await supabase
+        .from("user_kanji_progress")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gt("repetitions", 0);
+
+      if (error) throw error;
+      return count || 0;
     },
     enabled: !!user,
   });

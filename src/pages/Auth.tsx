@@ -264,26 +264,28 @@ export default function Auth() {
         </Card>
 
 
-        {/* Debug Section */}
-        <div className="mt-8 p-4 bg-black/80 text-white rounded-lg text-xs font-mono w-full max-w-md overflow-hidden">
-          <h3 className="font-bold mb-2 text-red-400">Zone de Debug (Temporaire)</h3>
-          <div className="space-y-1">
-            <p>Status: {isLoading ? "Chargement..." : "Prêt"}</p>
-            <p>URL Supabase: {import.meta.env.VITE_SUPABASE_URL ? "Configurée ✅" : "MANQUANTE ❌"}</p>
-            <p>Project ID (env): {import.meta.env.VITE_SUPABASE_PROJECT_ID}</p>
-            <p>Clé Anon: {import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ? "Configurée ✅" : "MANQUANTE ❌"}</p>
-            <p>URL Site: {window.location.origin}</p>
-            <p>URL Redirection: {window.location.origin}</p>
-            <div className="border-t border-gray-700 my-2 pt-2">
-              <p className="text-gray-400">Si l'auth Google échoue :</p>
-              <ol className="list-decimal pl-4 space-y-1 text-gray-500">
-                <li>Vérifiez que <strong>{window.location.origin}</strong> est dans les "Site URL" ou "Redirect URLs" de Supabase.</li>
-                <li>Vérifiez que Google est activé dans Auth Providers.</li>
-                <li>Vérifiez le Client ID / Secret (sans espaces !).</li>
-              </ol>
+        {/* Debug Section - Restricted to admin email */}
+        {email === 'charif.lycee@gmail.com' && (
+          <div className="mt-8 p-4 bg-black/80 text-white rounded-lg text-xs font-mono w-full max-w-md overflow-hidden opacity-50 hover:opacity-100 transition-opacity">
+            <h3 className="font-bold mb-2 text-red-400">Zone de Debug (Temporaire)</h3>
+            <div className="space-y-1">
+              <p>Status: {isLoading ? "Chargement..." : "Prêt"}</p>
+              <p>URL Supabase: {import.meta.env.VITE_SUPABASE_URL ? "Configurée ✅" : "MANQUANTE ❌"}</p>
+              <p>Project ID (env): {import.meta.env.VITE_SUPABASE_PROJECT_ID}</p>
+              <p>Clé Anon: {import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ? "Configurée ✅" : "MANQUANTE ❌"}</p>
+              <p>URL Site: {window.location.origin}</p>
+              <p>URL Redirection: {window.location.origin}</p>
+              <div className="border-t border-gray-700 my-2 pt-2">
+                <p className="text-gray-400">Si l'auth Google échoue :</p>
+                <ol className="list-decimal pl-4 space-y-1 text-gray-500">
+                  <li>Vérifiez que <strong>{window.location.origin}</strong> est dans les "Site URL" ou "Redirect URLs" de Supabase.</li>
+                  <li>Vérifiez que Google est activé dans Auth Providers.</li>
+                  <li>Vérifiez le Client ID / Secret (sans espaces !).</li>
+                </ol>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
       </motion.div >
     </div >
