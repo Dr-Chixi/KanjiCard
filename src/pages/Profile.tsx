@@ -21,12 +21,13 @@ import {
   Trophy,
   Calendar,
   TrendingUp,
-  Folder,
-  User,
 } from "lucide-react";
 import BottomNav from "@/components/layout/BottomNav";
 import { format, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import KanjiSuggestionDialog from "@/components/profile/KanjiSuggestionDialog";
+import AdminSuggestions from "@/components/profile/AdminSuggestions";
+import MySuggestionsList from "@/components/profile/MySuggestionsList";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -275,6 +276,32 @@ export default function Profile() {
                 : "récemment"}
             </p>
           </motion.div>
+
+          {/* Contributions Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="flex items-center justify-between mb-2 px-1">
+              <h3 className="font-semibold">Mes Contributions</h3>
+              <KanjiSuggestionDialog />
+            </div>
+            <MySuggestionsList />
+          </motion.div>
+
+          {/* Admin Section */}
+          {user?.email === "charif.lycee@gmail.com" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="pt-4 border-t"
+            >
+              <h3 className="font-semibold mb-4 text-destructive">Administration</h3>
+              <AdminSuggestions />
+            </motion.div>
+          )}
         </div>
       </main>
 
