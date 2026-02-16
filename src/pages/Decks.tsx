@@ -135,6 +135,7 @@ export default function Decks() {
                     requiredLevel={1}
                     userLevel={profile?.current_level || 1}
                     onClick={() => navigate(`/study/${deck.id}`)}
+                    onEdit={() => navigate(`/decks/edit/${deck.id}`)}
                     onDelete={() => handleDeleteDeck(deck.id)}
                     delay={index * 0.05}
                   />

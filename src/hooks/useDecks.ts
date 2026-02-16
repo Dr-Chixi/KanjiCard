@@ -53,6 +53,94 @@ export function useCustomDecks(userId: string | undefined) {
     enabled: !!userId,
   });
 }
+
+export function useDeck(deckId: string | undefined) {
+  return useQuery({
+    queryKey: ["deck", deckId],
+    queryFn: async () => {
+      if (!deckId) return null;
+
+      const { data: deck, error: deckError } = await supabase
+        .from("decks")
+        .select(`
+          *,
+          kanjis:deck_kanjis(
+            kanji:kanjis(id, kanji, meaning_fr, jlpt_level)
+          )
+        `)
+        .eq("id", deckId)
+        .single();
+
+      if (deckError) throw deckError;
+
+      // Transform the nested structure to match our Kanji interface
+      const kanjis = (deck.kanjis || []).map((dk: any) => dk.kanji);
+      return { ...deck, kanjis } as Deck & { kanjis: any[] };
+    },
+    enabled: !!deckId,
+  });
+}
+
+export function useUpdateDeck() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      deckId,
+      name,
+      description,
+      emoji,
+      kanjiIds,
+    }: {
+      deckId: string;
+      name: string;
+      description: string | null;
+      emoji: string;
+      kanjiIds: string[];
+    }) => {
+      // 1. Update deck metadata
+      const { error: deckError } = await supabase
+        .from("decks")
+        .update({
+          name,
+          description,
+          cover_emoji: emoji,
+          kanji_count: kanjiIds.length,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", deckId);
+
+      if (deckError) throw deckError;
+
+      // 2. Update deck kanjis (simplest way: delete all and re-add)
+      const { error: deleteError } = await supabase
+        .from("deck_kanjis")
+        .delete()
+        .eq("deck_id", deckId);
+
+      if (deleteError) throw deleteError;
+
+      const deckKanjis = kanjiIds.map((kanjiId, i) => ({
+        deck_id: deckId,
+        kanji_id: kanjiId,
+        position: i,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("deck_kanjis")
+        .insert(deckKanjis);
+
+      if (insertError) throw insertError;
+
+      return deckId;
+    },
+    onSuccess: (deckId) => {
+      queryClient.invalidateQueries({ queryKey: ["decks"] });
+      queryClient.invalidateQueries({ queryKey: ["deck", deckId] });
+    },
+  });
+}
+
 export function useDeleteDeck() {
   const queryClient = useQueryClient();
 

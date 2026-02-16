@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,8 +11,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Search, Plus, X, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Search, Plus, X, Check, Sparkles, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDeck, useUpdateDeck } from "@/hooks/useDecks";
 
 const EMOJI_OPTIONS = ["📚", "🎌", "🌸", "⛩️", "🗻", "🎎", "🍣", "🎋", "🌊", "🔥", "⭐", "💎"];
 
@@ -25,6 +26,8 @@ interface Kanji {
 
 export default function CreateDeck() {
   const navigate = useNavigate();
+  const { deckId } = useParams();
+  const isEditMode = !!deckId;
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -35,6 +38,19 @@ export default function CreateDeck() {
   const [selectedKanjis, setSelectedKanjis] = useState<Kanji[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [jlptFilter, setJlptFilter] = useState<number | null>(null);
+
+  // Fetch existing deck if in edit mode
+  const { data: existingDeck, isLoading: isFetchingDeck } = useDeck(deckId);
+
+  // Initialize form with existing deck data
+  useEffect(() => {
+    if (existingDeck) {
+      setName(existingDeck.name);
+      setDescription(existingDeck.description || "");
+      setEmoji(existingDeck.cover_emoji);
+      setSelectedKanjis(existingDeck.kanjis);
+    }
+  }, [existingDeck]);
 
   // Fetch all kanjis
   const { data: kanjis, isLoading: kanjisLoading } = useQuery({
@@ -61,12 +77,25 @@ export default function CreateDeck() {
     return matchesSearch && matchesJlpt && notSelected;
   });
 
+  // Update deck mutation
+  const updateDeck = useUpdateDeck();
+
   // Create deck mutation
   const createDeck = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
       if (!name.trim()) throw new Error("Le nom est requis");
       if (selectedKanjis.length === 0) throw new Error("Sélectionne au moins un kanji");
+
+      if (isEditMode && deckId) {
+        return updateDeck.mutateAsync({
+          deckId,
+          name: name.trim(),
+          description: description.trim() || null,
+          emoji,
+          kanjiIds: selectedKanjis.map(k => k.id),
+        });
+      }
 
       // Create deck
       const { data: deck, error: deckError } = await supabase
@@ -99,11 +128,11 @@ export default function CreateDeck() {
 
       return deck;
     },
-    onSuccess: (deck) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["decks"] });
       toast({
-        title: "Deck créé !",
-        description: `"${deck.name}" avec ${selectedKanjis.length} kanjis`,
+        title: isEditMode ? "Deck mis à jour !" : "Deck créé !",
+        description: `"${name}" avec ${selectedKanjis.length} kanjis`,
       });
       navigate("/decks");
     },
@@ -142,222 +171,230 @@ export default function CreateDeck() {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-xl font-semibold text-white">Créer un deck KanjiCard</h1>
+            <h1 className="text-xl font-semibold text-white">
+              {isEditMode ? "Modifier le deck" : "Créer un deck KanjiCard"}
+            </h1>
           </div>
         </div>
       </header>
 
       <main className="px-4 -mt-4">
-        <div className="max-w-lg mx-auto space-y-6">
-          {/* Deck Info Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="glass-card">
-              <CardContent className="p-4 space-y-4">
-                {/* Emoji Picker */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">
-                    Icône
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {EMOJI_OPTIONS.map((e) => (
-                      <button
-                        key={e}
-                        onClick={() => setEmoji(e)}
-                        className={cn(
-                          "w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all",
-                          emoji === e
-                            ? "gradient-primary shadow-glow"
-                            : "bg-muted hover:bg-muted/80"
-                        )}
-                      >
-                        {e}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Name */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">
-                    Nom du deck
-                  </label>
-                  <Input
-                    placeholder="Ex: Mes kanjis favoris"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="h-12"
-                  />
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">
-                    Description (optionnel)
-                  </label>
-                  <Textarea
-                    placeholder="Décris ton deck..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={2}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Selected Kanjis */}
-          {selectedKanjis.length > 0 && (
+        {isFetchingDeck ? (
+          <div className="max-w-lg mx-auto py-20 text-center text-muted-foreground">
+            Chargement du deck...
+          </div>
+        ) : (
+          <div className="max-w-lg mx-auto space-y-6">
+            {/* Deck Info Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">
-                  Kanjis sélectionnés ({selectedKanjis.length})
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedKanjis([])}
-                >
-                  Tout effacer
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <AnimatePresence>
-                  {selectedKanjis.map((kanji) => (
-                    <motion.button
-                      key={kanji.id}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="group relative px-3 py-2 rounded-xl glass-card hover:bg-destructive/10 transition-colors"
-                      onClick={() => toggleKanji(kanji)}
-                    >
-                      <span className="text-lg font-japanese">{kanji.kanji}</span>
-                      <X className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </motion.button>
-                  ))}
-                </AnimatePresence>
-              </div>
+              <Card className="glass-card">
+                <CardContent className="p-4 space-y-4">
+                  {/* Emoji Picker */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">
+                      Icône
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {EMOJI_OPTIONS.map((e) => (
+                        <button
+                          key={e}
+                          onClick={() => setEmoji(e)}
+                          className={cn(
+                            "w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all",
+                            emoji === e
+                              ? "gradient-primary shadow-glow"
+                              : "bg-muted hover:bg-muted/80"
+                          )}
+                        >
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Name */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">
+                      Nom du deck
+                    </label>
+                    <Input
+                      placeholder="Ex: Mes kanjis favoris"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="h-12"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">
+                      Description (optionnel)
+                    </label>
+                    <Textarea
+                      placeholder="Décris ton deck..."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
-          )}
 
-          {/* Kanji Library */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <h3 className="font-semibold mb-3">Bibliothèque de kanjis</h3>
-
-            {/* Search */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher un kanji ou sa signification..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12"
-              />
-            </div>
-
-            {/* JLPT Filters */}
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-              <Badge
-                variant={jlptFilter === null ? "default" : "secondary"}
-                className="cursor-pointer shrink-0"
-                onClick={() => setJlptFilter(null)}
+            {/* Selected Kanjis */}
+            {selectedKanjis.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
               >
-                Tous
-              </Badge>
-              {[5, 4, 3, 2, 1].map((level) => (
-                <Badge
-                  key={level}
-                  variant={jlptFilter === level ? "default" : "secondary"}
-                  className="cursor-pointer shrink-0"
-                  onClick={() => setJlptFilter(jlptFilter === level ? null : level)}
-                >
-                  N{level}
-                </Badge>
-              ))}
-            </div>
-
-            {/* Kanji Grid */}
-            <ScrollArea className="h-64 rounded-xl border bg-card/50">
-              {kanjisLoading ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  Chargement...
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold">
+                    Kanjis sélectionnés ({selectedKanjis.length})
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedKanjis([])}
+                  >
+                    Tout effacer
+                  </Button>
                 </div>
-              ) : filteredKanjis && filteredKanjis.length > 0 ? (
-                <div className="grid grid-cols-5 gap-2 p-3">
-                  {filteredKanjis.slice(0, 100).map((kanji) => (
-                    <button
-                      key={kanji.id}
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleKanji(kanji);
-                      }}
-                      className="aspect-square rounded-xl bg-muted/50 hover:bg-primary/20 flex flex-col items-center justify-center p-1 transition-all active:scale-95 cursor-pointer touch-none"
-                    >
-                      <span className="text-xl font-japanese group-hover:text-primary pointer-events-none">
-                        {kanji.kanji}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground truncate w-full text-center pointer-events-none">
-                        {kanji.meaning_fr.split(",")[0]}
-                      </span>
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-2">
+                  <AnimatePresence>
+                    {selectedKanjis.map((kanji) => (
+                      <motion.button
+                        key={kanji.id}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="group relative px-3 py-2 rounded-xl glass-card hover:bg-destructive/10 transition-colors"
+                        onClick={() => toggleKanji(kanji)}
+                      >
+                        <span className="text-lg font-japanese">{kanji.kanji}</span>
+                        <X className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </motion.button>
+                    ))}
+                  </AnimatePresence>
                 </div>
-              ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  {searchQuery || jlptFilter
-                    ? "Aucun kanji trouvé"
-                    : "Aucun kanji disponible"}
-                </div>
-              )}
-            </ScrollArea>
-            {filteredKanjis && filteredKanjis.length > 100 && (
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Affichage des 100 premiers résultats
-              </p>
+              </motion.div>
             )}
-          </motion.div>
 
-          {/* Create Button */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Button
-              className="w-full h-14 gradient-accent text-lg"
-              onClick={() => createDeck.mutate()}
-              disabled={createDeck.isPending || !name.trim() || selectedKanjis.length === 0}
+            {/* Kanji Library */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
             >
-              {createDeck.isPending ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Création...
-                </div>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  {!name.trim() ? "Donne un nom au deck" : `Créer le deck (${selectedKanjis.length} kanjis)`}
-                </>
+              <h3 className="font-semibold mb-3">Bibliothèque de kanjis</h3>
+
+              {/* Search */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher un kanji ou sa signification..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-12"
+                />
+              </div>
+
+              {/* JLPT Filters */}
+              <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                <Badge
+                  variant={jlptFilter === null ? "default" : "secondary"}
+                  className="cursor-pointer shrink-0"
+                  onClick={() => setJlptFilter(null)}
+                >
+                  Tous
+                </Badge>
+                {[5, 4, 3, 2, 1].map((level) => (
+                  <Badge
+                    key={level}
+                    variant={jlptFilter === level ? "default" : "secondary"}
+                    className="cursor-pointer shrink-0"
+                    onClick={() => setJlptFilter(jlptFilter === level ? null : level)}
+                  >
+                    N{level}
+                  </Badge>
+                ))}
+              </div>
+
+              {/* Kanji Grid */}
+              <ScrollArea className="h-64 rounded-xl border bg-card/50">
+                {kanjisLoading ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    Chargement...
+                  </div>
+                ) : filteredKanjis && filteredKanjis.length > 0 ? (
+                  <div className="grid grid-cols-5 gap-2 p-3">
+                    {filteredKanjis.slice(0, 100).map((kanji) => (
+                      <button
+                        key={kanji.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleKanji(kanji);
+                        }}
+                        className="aspect-square rounded-xl bg-muted/50 hover:bg-primary/20 flex flex-col items-center justify-center p-1 transition-all active:scale-95 cursor-pointer touch-none"
+                      >
+                        <span className="text-xl font-japanese group-hover:text-primary pointer-events-none">
+                          {kanji.kanji}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground truncate w-full text-center pointer-events-none">
+                          {kanji.meaning_fr.split(",")[0]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    {searchQuery || jlptFilter
+                      ? "Aucun kanji trouvé"
+                      : "Aucun kanji disponible"}
+                  </div>
+                )}
+              </ScrollArea>
+              {filteredKanjis && filteredKanjis.length > 100 && (
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Affichage des 100 premiers résultats
+                </p>
               )}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Les decks personnalisés rapportent 50% d'XP
-            </p>
-          </motion.div>
-        </div>
+            </motion.div>
+
+            {/* Create/Save Button */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Button
+                className="w-full h-14 gradient-accent text-lg"
+                onClick={() => createDeck.mutate()}
+                disabled={createDeck.isPending || !name.trim() || selectedKanjis.length === 0}
+              >
+                {createDeck.isPending ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    {isEditMode ? "Mise à jour..." : "Création..."}
+                  </div>
+                ) : (
+                  <>
+                    {isEditMode ? <Save className="w-5 h-5 mr-2" /> : <Sparkles className="w-5 h-5 mr-2" />}
+                    {!name.trim() ? "Donne un nom au deck" : isEditMode ? "Sauvegarder les modifications" : `Créer le deck (${selectedKanjis.length} kanjis)`}
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Les decks personnalisés rapportent 50% d'XP
+              </p>
+            </motion.div>
+          </div>
+        )}
       </main>
-    </div>
+    </div >
   );
 }

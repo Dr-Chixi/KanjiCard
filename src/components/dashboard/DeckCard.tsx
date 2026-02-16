@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Lock, BookOpen, CheckCircle2, Trash2 } from "lucide-react";
+import { Lock, BookOpen, CheckCircle2, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,7 @@ interface DeckCardProps {
   progress?: number;
   onClick?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
   delay?: number;
 }
 
@@ -33,6 +34,7 @@ export default function DeckCard({
   progress = 0,
   onClick,
   onDelete,
+  onEdit,
   delay = 0,
 }: DeckCardProps) {
   const isLocked = userLevel < requiredLevel;
@@ -70,6 +72,24 @@ export default function DeckCard({
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {isCompleted && (
                     <CheckCircle2 className="w-4 h-4 text-success" />
+                  )}
+                  {onEdit && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit();
+                      }}
+                    >
+                      <motion.div
+                        whileHover={{ rotate: 15 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </motion.div>
+                    </Button>
                   )}
                   {onDelete && (
                     <Button

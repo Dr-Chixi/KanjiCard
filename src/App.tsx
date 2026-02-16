@@ -79,6 +79,14 @@ const AppContent = () => {
           }
         />
         <Route
+          path="/decks/edit/:deckId"
+          element={
+            <ProtectedRoute>
+              <CreateDeck />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/profile"
           element={
             <ProtectedRoute>
