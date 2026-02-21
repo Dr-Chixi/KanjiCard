@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Study from "./pages/Study";
@@ -105,7 +106,9 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <AppContent />
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
